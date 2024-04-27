@@ -2,7 +2,6 @@ library(caret)  # for data splitting and pre-processing
 library(dplyr)
 library(purrr)
 library(tidyr)
-
 source("data.r")
 
 # Pre-process the data
@@ -17,14 +16,20 @@ check_eoc_process <- check_eoc_sorted[1:2000, ] %>%
 
 check_eoc_process <- check_eoc_process %>%
   rename(
-    chapter_number_EOC = chapter_number,
-    book_EOC = book,
     ratio_correct = EOC
   )
 
+unique_ids_eoc <- unique(check_eoc_process$student_id)
+filtered_ids_pulse <- check_pulse_sorted %>%
+  filter(student_id %in% unique_ids_eoc)
+filtered_media_views <- media_views_sorted %>%
+  filter(student_id %in% unique_ids_eoc)
+filtered_page_views <- page_views_sorted %>%
+  filter(student_id %in% unique_ids_eoc)
+
 # Omitting rows with NA values in specific columns
 
-check_pulse_process <- check_pulse_sorted[1:2000, ] %>%
+check_pulse_process <- filtered_ids_pulse %>% na.omit() %>%
   pivot_wider(
     names_from = construct,      # Column that contains the names for the new columns
     values_from = response,       # Column that contains the values for the new columns
@@ -33,15 +38,12 @@ check_pulse_process <- check_pulse_sorted[1:2000, ] %>%
 
 check_pulse_process <- check_pulse_process %>%
   rename(
-    chapter_number_pulse = chapter_number,
-    book_pulse = book,
     release_pulse = release
   )
 
 # media_views organized by student_id, chapter, and section
-#
 
-media_views_process <- media_views_sorted[1:2000, ] %>%
+media_views_process <- filtered_media_views %>%
   group_by(student_id, chapter_number, section_number)
 
 media_views_timeseries <- media_views_process %>%
@@ -60,7 +62,7 @@ media_views_timeseries <- media_views_timeseries %>%
 
 # page_views organized
 
-page_views_process <- page_views_sorted[1:2000,] %>%
+page_views_process <- filtered_page_views %>%
   group_by(student_id, chapter_number, section_number)
 
 page_views_timeseries <- page_views_process %>%
@@ -77,6 +79,7 @@ page_views_timeseries <- page_views_timeseries %>%
     review_flag_page = review_flag
     
   )
+
 
 #-------------------------------------
 
