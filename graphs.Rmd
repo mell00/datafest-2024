@@ -1,0 +1,37 @@
+---
+title: "graphs"
+author: "Helen Yuan -- 106145727"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Load stuff
+```{r}
+library(stringr)
+library(lubridate)
+library(hms)
+library(ggplot2)
+library(dplyr)
+library(randomForest)
+library(corrplot)
+
+setwd("~/Downloads/datafest/Random Sample of Data Files")
+page_views <- read.csv("page_views.csv")
+media_views <- read.csv("media_views.csv")
+items <- read.csv("items.csv")
+responses <- read.csv("responses.csv")
+pulse <- read.csv("checkpoints_pulse.csv")
+eoc <- read.csv("checkpoints_eoc.csv")
+codebook <- read.csv("../Documentation/codebook.csv")
+variable_list <- read.csv("../Documentation/variable_list.csv")
+```
+
+# Some inner joins
+I used a subset consisting of only one book
+```{r}
+eoc_abcd <- eoc[eoc$book == "College / Advanced Statistics and Data Science (ABCD)",]
+pulse_abcd <- pulse[pulse$book == "College / Advanced Statistics and Data Science (ABCD)",]
+joined <- pulse_abcd |> na.omit() |> 
+  pivot_wider(names_from = construct, values_from = response, values_fn = mean) |> 
+  inner_join(select(eoc_abcd, student_id, chapter_number, EOC))
+```
