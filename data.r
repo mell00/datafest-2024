@@ -19,8 +19,21 @@ check_pulse_sorted <- checkpoints_pulse %>%
 glimpse(check_pulse_sorted)
 
 media_views <- read.csv("media_views.csv", header = TRUE, sep = ",")
+media_views_sorted <- media_views %>% drop_na()
+media_views_sorted <- media_views_sorted %>%
+  arrange(book, release, chapter_number, student_id)
+
+
+# Inspecting the sorted data
+glimpse(media_views_sorted)
 
 page_views <- read.csv("page_views.csv", header = TRUE, sep = ",")
+page_views_sorted <- page_views %>% drop_na()
+page_views_sorted <- page_views_sorted %>%
+  arrange(book, release, chapter_number, student_id, engaged)
+
+# Inspecting the sorted data
+glimpse(page_views_sorted)
 
 
 
