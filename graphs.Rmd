@@ -35,3 +35,25 @@ joined <- pulse_abcd |> na.omit() |>
   pivot_wider(names_from = construct, values_from = response, values_fn = mean) |> 
   inner_join(select(eoc_abcd, student_id, chapter_number, EOC))
 ```
+
+# Some graphs
+This one's really messy and hard to read, but it shows that in general students' 
+EOC scores get lower and lower as they progress through the book. Each colored 
+line represents one student.
+```{r}
+eoc_abcd |> ggplot(aes(x = chapter_number, y = EOC, group = student_id)) +
+  geom_point(aes(color = student_id), show.legend = FALSE) + 
+  geom_line(aes(color = student_id), alpha = 0.5, show.legend = FALSE)
+```
+I grouped the chapters into "early" (1-4), "middle" (5-12) and "late" (13-16). I
+also summarized students' average EOC scores within each phase and graphed each
+students' average "early" phase EOC scores against their "late" phase scores.
+Seems like students who are struggling in the beginning are still struggling
+by the end?
+```{r}
+eoc_abcd$phase <- ifelse(eoc_abcd$chapter_number < 5, "early", ifelse(eoc_abcd$chapter_number > 12, "late", "middle"))
+eoc_abcd |> group_by(student_id, phase) |> summarize(EOC = mean(EOC, na.rm = TRUE)) |> 
+  pivot_wider(names_from = phase, values_from = EOC) |> 
+  ggplot(aes(x = early, y = late)) +
+  geom_point()
+```
