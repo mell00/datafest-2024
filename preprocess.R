@@ -78,6 +78,29 @@ page_views_timeseries <- page_views_timeseries %>%
     
   )
 
+#-------------------------------------
+
+# Performing the inner join based on 'student_id'
+joined_pulse_eoc <- inner_join(check_pulse_process, check_eoc_process, by = c("chapter_number", "student_id", "book", "class_id"))
+
+# Optional: Specify additional processing or selection of columns as needed
+# For example, to select specific columns you can use:
+joined_pulse_eoc %>% select(student_id, chapter_number, everything())
+
+joined_pulse_eoc %>% group_by("chapter_number") %>% summarize()
+
+joined_pulse_eoc <- joined_pulse_eoc %>%
+  select(student_id, chapter_number, everything()) %>%
+  arrange(student_id, chapter_number)  # Sorting by student_id and chapter_number for clarity
+
+# Optionally, you could also create a more structured list or grouped data frame:
+joined_pulse_eoc <- joined_pulse_eoc %>%
+  group_by(student_id, chapter_number) %>%
+  summarise_all(list)  # Collecting all data under each student_id and chapter_number combination
+
+
+#-------------------------------------
+
 
 # Splitting the dataset into training and testing sets
 set.seed(42)  # for reproducibility
