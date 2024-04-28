@@ -16,44 +16,68 @@ library(randomForest)
 library(corrplot)
 
 setwd("~/Downloads/datafest/Random Sample of Data Files")
-page_views <- read.csv("page_views.csv")
-media_views <- read.csv("media_views.csv")
-items <- read.csv("items.csv")
-responses <- read.csv("responses.csv")
-pulse <- read.csv("checkpoints_pulse.csv")
-eoc <- read.csv("checkpoints_eoc.csv")
-codebook <- read.csv("../Documentation/codebook.csv")
-variable_list <- read.csv("../Documentation/variable_list.csv")
+big <- read.csv("big.csv")
 ```
 
-# Some inner joins
-I used a subset consisting of only one book
-```{r}
-eoc_abcd <- eoc[eoc$book == "College / Advanced Statistics and Data Science (ABCD)",]
-pulse_abcd <- pulse[pulse$book == "College / Advanced Statistics and Data Science (ABCD)",]
-joined <- pulse_abcd |> na.omit() |> 
-  pivot_wider(names_from = construct, values_from = response, values_fn = mean) |> 
-  inner_join(select(eoc_abcd, student_id, chapter_number, EOC))
-```
+# EOC as students progress through the books
+In general students' EOC scores get lower and lower as they progress through the 
+book. Each colored line represents one student.
 
-# Some graphs
-This one's really messy and hard to read, but it shows that in general students' 
-EOC scores get lower and lower as they progress through the book. Each colored 
-line represents one student.
+> levels(big$book)
+[1] "College / Advanced Statistics and Data Science (ABCD)"     
+[2] "College / Statistics and Data Science (ABC)"               
+[3] "High School / Advanced Statistics and Data Science I (ABC)"
+
 ```{r}
-eoc_abcd |> ggplot(aes(x = chapter_number, y = EOC, group = student_id)) +
-  geom_point(aes(color = student_id), show.legend = FALSE) + 
-  geom_line(aes(color = student_id), alpha = 0.5, show.legend = FALSE)
+big |> ggplot(aes(x = ratio_correct, color = institution_id)) +
+  geom_boxplot()
+# Convert book column to factor
+big$book <- factor(big$book)
+big |> ggplot(aes(x = chapter_number, y = ratio_correct), group = student_id) +
+  geom_point(aes(color = student_id), show.legend = FALSE) +
+  geom_line(aes(color = student_id), show.legend = FALSE) # this is too cluttered
+
+big[as.numeric(big$book) == 1,] |> 
+  ggplot(aes(x = chapter_number, y = ratio_correct), group = student_id) +
+  geom_point(aes(color = student_id), show.legend = FALSE, alpha = 0.5) +
+  geom_line(aes(color = student_id), show.legend = FALSE, alpha = 0.5) 
+
+big |> group_by(book, chapter_number) |> summarize(ratio_correct = mean(ratio_correct, na.rm = TRUE)) |> ggplot(aes(x = chapter_number, y = ratio_correct, color = book)) +
+  geom_point(cex = 3) +
+  geom_line()
 ```
-I grouped the chapters into "early" (1-4), "middle" (5-12) and "late" (13-16). I
-also summarized students' average EOC scores within each phase and graphed each
-students' average "early" phase EOC scores against their "late" phase scores.
-Seems like students who are struggling in the beginning are still struggling
-by the end?
+# Why are high schoolers scoring so low?
+Seems like they don't differ too much in time engaged/idle/off page or anything
+actually maybe they're just stupid
+
 ```{r}
-eoc_abcd$phase <- ifelse(eoc_abcd$chapter_number < 5, "early", ifelse(eoc_abcd$chapter_number > 12, "late", "middle"))
-eoc_abcd |> group_by(student_id, phase) |> summarize(EOC = mean(EOC, na.rm = TRUE)) |> 
-  pivot_wider(names_from = phase, values_from = EOC) |> 
-  ggplot(aes(x = early, y = late)) +
-  geom_point()
+# Remove outliers 
+big[big$n_attempt < 300,] |> group_by(book, student_id) |> summarize(n_attempt = mean(n_attempt, na.rm = TRUE), ratio_correct = mean(ratio_correct, na.rm = TRUE)) |> 
+  ggplot(aes(x = n_attempt, color = book)) +
+  geom_boxplot() +
+  theme(legend.position = "bottom")
+```
+Are students who start out struggling still struggling?
+
+```{r}
+big |> pivot_wider(id_cols = c(student_id), names_from = chapter_number, values_from = ratio_correct) |> 
+  ggplot(aes(x = `4`, y = `10`)) +
+  geom_point() # etc...
+```
+# Insights from media views
+```{r}
+big |> ggplot(aes(x = proportion_video, y = ratio_correct)) + 
+  geom_point(aes(color = book)) +
+  theme()
+pairs(~ratio_correct+off_page_long+idle_long+engaged, big)
+big[big$off_page_long < 1e+07,] |> ggplot(aes(x = off_page_long, y = ratio_correct)) +
+  geom_point(alpha = 0.25)
+
+# As chapters go on...
+big |> mutate(on_task_ratio = engaged/(off_page_brief+off_page_long)) |> 
+  filter(on_task_ratio < 3.318226) |> 
+  ggplot(aes(x = on_task_ratio, y = ratio_correct)) +
+  geom_point(aes(color = institution_id))
+
+summary(big$engaged/(big$off_page_brief+big$off_page_long)) # outliers at 3.318226
 ```
