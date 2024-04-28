@@ -1,0 +1,99 @@
+---
+title: "Untitled"
+author: "Yinqi Yao"
+date: "2024-04-27"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(randomForest)
+library(ggplot2)
+library('scales') # visualization
+library('dplyr') # data manipulation
+```
+
+
+```{r}
+data <-read.csv('/Users/Alooooo/Desktop/big.csv')
+
+data_cleaned <- data %>%
+  mutate(across(everything(), ~replace(., is.na(.), 0)))
+```
+
+
+```{r}
+rf_model <- randomForest(ratio_correct ~ ., data = data_cleaned, importance = TRUE)
+rf_model
+```
+```{r}
+# Extract feature importances
+importances <- importance(rf_model, type = 1)  # type = 1 for mean decrease in accuracy
+
+# Create a data frame with feature names and their importances
+feature_importances <- data.frame(
+  feature = rownames(importances),
+  importance = round(importances[, ], 3)
+)
+
+# Sort the importances in descending order and set row names as feature names
+feature_importances <- feature_importances[order(-feature_importances$importance),]
+rownames(feature_importances) <- feature_importances$feature
+feature_importances <- feature_importances[, "importance", drop = FALSE]
+
+```
+
+
+
+```{r}
+# Create a data frame with feature names and their importances
+feature_importances <- data.frame(
+  feature = rownames(importances),
+  importance = round(importances[, ], 1)
+)
+
+# Sort the importances in descending order and set row names as feature names
+feature_importances <- feature_importances[order(-feature_importances$importance),]
+rownames(feature_importances) <- feature_importances$feature
+feature_importances <- feature_importances[, "importance", drop = FALSE]
+
+# View the sorted feature importances
+print(feature_importances)
+
+```
+```{r}
+# Extract feature importances using the correct column name
+importances <- importance(rf_model, type = 1)  # Ensure type is correctly set for what you need
+
+# Create a data frame with feature names and their importances using the correct column
+feature_importances <- data.frame(
+  feature = rownames(importances),
+  importance = round(importances[, "%IncMSE"], 3)  # Using '%IncMSE' or the correct column name as per the output of print(colnames(importance(rf_model)))
+)
+
+# Sort the importances in descending order and set row names as feature names
+feature_importances <- feature_importances[order(-feature_importances$importance),]
+rownames(feature_importances) <- feature_importances$feature
+feature_importances <- feature_importances[, "importance", drop = FALSE]
+
+# Ensure the feature names are a column in the data frame, not just row names
+feature_importances$feature <- rownames(feature_importances)
+
+# Create a ggplot bar plot
+library(ggplot2)
+ggplot(feature_importances, aes(x = reorder(feature, importance), y = importance)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Feature Importances", x = "Features", y = "Importance") +
+  theme_minimal() +
+  coord_flip()  # Flip the coordinates for horizontal bars
+
+```
+
+
+
+
+
+
