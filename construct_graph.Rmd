@@ -1,0 +1,46 @@
+---
+title: "checkpoint_pulse"
+author: "Yinqi Yao"
+date: "2024-04-28"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+
+data <- read.csv("/Users/Alooooo/Desktop/Data/Random Sample/checkpoints_pulse.csv")
+
+clean_data <- data %>%
+  filter(!is.na(response))
+
+# Sampling 2000 unique students
+set.seed(123) # Setting seed for reproducibility
+sampled_students <- clean_data %>%
+  distinct(student_id) %>%
+  slice_sample(n=2000)
+
+# Join the sampled students back to the main dataset to analyze only those students
+sampled_data <- sampled_students %>%
+  inner_join(clean_data, by = "student_id")
+
+# Analyze trends: Calculate average response for each construct by chapter
+trend_analysis <- sampled_data %>%
+  group_by(chapter_number, construct) %>%
+  summarise(average_response = mean(response, na.rm = TRUE), .groups = "drop")
+
+# (Optional) Plot the trend
+if (!require(ggplot2)) install.packages("ggplot2")
+library(ggplot2)
+
+ggplot(trend_analysis, aes(x = chapter_number, y = average_response, color = construct)) +
+  geom_line() +
+  theme_minimal() +
+  labs(title = "Trend of Student Responses by Construct", x = "Chapter Number", y = "Average Response")
+
+```
+
